@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            .chat {
+                border: 1px solid black;
+            }
+            
+            .chat_messages {
+                height: 200px;
+                overflow: scroll;
+            }
+
+            .chat_controls {
+                display: flex;
+            }
+
+            .chat_input {
+                flex: 1;
+            }
+
+            .chat_send-btn {
+                padding: 5px 25px;
+            }
+
+            video {
+                width: 400px;
+            }
+        </style>
+        <title>:)</title>
+    </head>
+    <body>
+        <section class="videoSection">
+            <video class="videoPlayer" controls>
+                <source src="https://cloud.kodik-cdn.com/animetvseries/4d1fcecaac62842f0bf09f61c342c9c8f4bf2262/25780aa88e92a991b5c948cdc7fa961f:2022112117/720.mp4" type="video/mp4" />
+            </video>
+            <button class="play-stop-btn">PLAY/STOP</button>
+        </section>
+
+        <br><br>
+        <div class="rightSection">
+            <button class="change-username-btn">Change username</button>
+    
+            <br><br>
+            
+            <section class="chat">
+                <div class="chat_messages"></div>
+                <div class="chat_controls">
+                    <input type="text" class="chat_input">
+                    <button class="chat_send-btn">Send</button>
+                </div>
+            </section>
+        </div>
+
+        <script src="https://cdn.socket.io/4.5.3/socket.io.min.js" integrity="sha384-WPFUvHkB1aHA5TDSZi6xtDgkF0wXJcIIxXhC6h8OT8EH3fC5PWro5pWJ1THjcfEi" crossorigin="anonymous"></script>
+        <script>
+            let socket = io();
+            let chatMessages = document.querySelector('.chat_messages');
+            let chatSendBtn = document.querySelector('.chat_send-btn');
+            let chatInput = document.querySelector('.chat_input');
+            let changeUsernameBtn = document.querySelector('.change-username-btn');
+
+            socket.on('sendToLogs', (message) => {
+                let messageElement = document.createElement('div');
+                let currentDateTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: "2-digit", second: "2-digit" });
+                messageElement.textContent = `[${currentDateTime}] ` + message;
+                
+                chatMessages.appendChild(messageElement);
+                messageElement.scrollIntoView({behavior: "smooth"});
+            });
+
+            changeUsernameBtn.addEventListener('click', () => {
+                let username = prompt('Type new username: ');
+                socket.emit('changeUsername', username);
+            });
+
+            chatSendBtn.addEventListener('click', () => {
+                let message = chatInput.value;
+                socket.emit('sendChatMessage', message);
+                chatInput.value = '';
+            });
+
+            let videoPlayer = document.querySelector(".videoPlayer");
+
+            videoPlayer.addEventListener('timeupdate', (event) => {
+                let currentTime = videoPlayer.currentTime;
+                if(videoPlayer.paused()) {
+                    socket.emit('timeupdate', currentTime);
+                }
+            });
+
+            let playStopBtn = document.querySelector('.play-stop-btn');
+
+            socket.on('setVideo', (isPaused, currTime) => {
+                videoPlayer.currentTime = currTime;
+                
+                if(isPaused) {
+                    videoPlayer.pause();
+                } else {
+                    videoPlayer.play();
+                }
+            });
+
+            playStopBtn.addEventListener('click', () => {                
+                let currentTime = videoPlayer.currentTime;
+                socket.emit('setVideo', currentTime);
+            });
+
+            // socket.on('syncTime', (isPaused, currentTime) => {
+            //     if(isPaused) {
+            //         videoPlayer.pause();
+            //     } else {
+            //         videoPlayer.play();
+            //     }
+            //     videoPlayer.currentTime = currentTime;
+            // });
+        </script>
+    </body>
+</html>
